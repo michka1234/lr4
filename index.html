@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM-Автосалон — прототип (ЛР4, вариант 21)</title>
+<style>
+  :root{
+    --bg:#f1f5f9; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --brand-2:#1d4ed8;
+    --green:#059669; --amber:#d97706; --red:#dc2626;
+    --radius:14px; --shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Inter,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .app{display:flex;min-height:100vh}
+
+  .sidebar{width:236px;background:linear-gradient(180deg,#0f172a,#111c33);color:#cbd5e1;padding:18px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:grid;place-items:center;font-size:18px}
+  .brand b{color:#fff;font-size:15px;line-height:1.1}
+  .brand small{display:block;color:#94a3b8;font-size:11px;font-weight:400}
+  .sidebar nav{margin-top:12px}
+  .sidebar nav a{display:flex;align-items:center;gap:10px;padding:11px 18px;color:#cbd5e1;text-decoration:none;cursor:pointer;font-size:14px;border-left:3px solid transparent;transition:.15s}
+  .sidebar nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+  .sidebar nav a.active{background:rgba(59,130,246,.16);color:#fff;border-left-color:#3b82f6}
+  .sidebar .foot{margin-top:auto;padding:14px 18px;font-size:11px;color:#64748b}
+
+  .main{flex:1;padding:22px 28px;min-width:0}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:14px;flex-wrap:wrap}
+  .topbar h2{font-size:22px;letter-spacing:-.2px}
+  .topbar .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .user-chip{display:flex;align-items:center;gap:9px;background:var(--panel);padding:7px 12px;border-radius:999px;box-shadow:var(--shadow);font-size:13px}
+  .user-chip .ava{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+
+  .page{display:none;animation:fade .2s ease}
+  .page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h3{font-size:15px;margin:20px 0 10px;color:#334155}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .card{background:var(--panel);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--line);position:relative;overflow:hidden}
+  .card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand)}
+  .card.green:before{background:var(--green)} .card.amber:before{background:var(--amber)} .card.violet:before{background:#8b5cf6}
+  .card .label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .card .value{font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-.5px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);gap:10px;flex-wrap:wrap}
+  .panel-head h3{margin:0;font-size:15px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:11px 14px;text-align:left;font-size:13px;border-bottom:1px solid var(--line)}
+  th{background:#f8fafc;color:#475569;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  tbody tr:hover td{background:#f8fbff}
+  tbody tr:last-child td{border-bottom:none}
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#334155}
+
+  .toolbar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+  input,select,button{font:inherit;font-size:13px}
+  input,select{padding:9px 11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:var(--ink);outline:none;transition:.15s}
+  input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  button{padding:9px 14px;border:none;border-radius:10px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;transition:.15s}
+  button:hover{background:var(--brand-2)}
+  button.secondary{background:#eef2f7;color:#1e293b}
+  button.secondary:hover{background:#e2e8f0}
+  button.danger{background:#fee2e2;color:#b91c1c}
+  button.danger:hover{background:#fecaca}
+  button.small{padding:6px 10px;font-size:12px;border-radius:8px}
+
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;padding:16px}
+  .form-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#475569;font-weight:600}
+  .form-grid .actions{display:flex;align-items:flex-end;gap:8px}
+  .error{color:var(--red);font-size:12.5px;padding:0 16px 14px;display:none}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .b-new{background:#e0edff;color:#1d4ed8}
+  .b-work{background:#fef3c7;color:#92400e}
+  .b-deal{background:#d1fae5;color:#065f46}
+  .b-no{background:#fee2e2;color:#991b1b}
+  .b-in{background:#d1fae5;color:#065f46}
+  .b-res{background:#fef3c7;color:#92400e}
+  .b-sold{background:#e2e8f0;color:#334155}
+
+  .funnel{padding:16px}
+  .funnel-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .funnel-row span{width:120px;font-size:12.5px;color:#475569;font-weight:600}
+  .funnel-bar{height:24px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);border-radius:6px;min-width:8px;transition:width .3s}
+  .funnel-row b{font-size:13px}
+
+  .hint{font-size:12px;color:var(--muted);padding:10px 16px;border-top:1px dashed var(--line)}
+
+  .toast-wrap{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:99}
+  .toast{background:#0f172a;color:#fff;padding:11px 14px;border-radius:11px;font-size:13px;box-shadow:var(--shadow);animation:pop .2s ease}
+  .toast.ok{background:#065f46} .toast.err{background:#991b1b}
+  @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+  @media(max-width:900px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;padding:10px}
+    .brand{border:none;padding:0 10px}
+    .sidebar nav{display:flex;margin:0}
+    .sidebar nav a{border-left:none;border-bottom:3px solid transparent;white-space:nowrap}
+    .sidebar nav a.active{border-left:none;border-bottom-color:#3b82f6}
+    .sidebar .foot{display:none}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .main{padding:16px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🚗</div>
+      <div><b>CRM-Автосалон</b><small>прототип · вариант 21</small></div>
+    </div>
+    <nav>
+      <a data-page="dashboard" class="active">📊 Главная</a>
+      <a data-page="clients">👥 Клиенты</a>
+      <a data-page="cars">🚙 Автомобили</a>
+      <a data-page="deals">📝 Сделки</a>
+      <a data-page="reports">📈 Отчёты</a>
+    </nav>
+    <div class="foot">ИрГУПС · ЛР №4<br>Учуватов М.А., ПИ 1-25-1-2</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="page-title">Главная</h2>
+        <div class="sub" id="page-sub">Сводка по работе автосалона</div>
+      </div>
+      <div class="user-chip"><span class="ava">М</span> Менеджер отдела продаж</div>
+    </div>
+
+    <section id="dashboard" class="page active">
+      <div class="cards">
+        <div class="card"><div class="label">Клиенты</div><div class="value" id="kpi-clients">0</div></div>
+        <div class="card green"><div class="label">Авто в наличии</div><div class="value" id="kpi-cars">0</div></div>
+        <div class="card violet"><div class="label">Сделки</div><div class="value" id="kpi-deals">0</div></div>
+        <div class="card amber"><div class="label">Сумма продаж, ₽</div><div class="value" id="kpi-sum">0</div></div>
+      </div>
+      <h3>Воронка продаж</h3>
+      <div class="panel"><div class="funnel" id="funnel"></div></div>
+    </section>
+
+    <section id="clients" class="page">
+      <div class="toolbar">
+        <input id="client-search" placeholder="🔎 Поиск по ФИО или телефону..." oninput="renderClients()" style="min-width:260px">
+        <button onclick="toggle('client-form')">+ Добавить клиента</button>
+      </div>
+
+      <div id="client-form" class="panel" style="display:none;margin-bottom:12px">
+        <div class="form-grid">
+          <label>ФИО*<input id="c-name" placeholder="Иванов Иван"></label>
+          <label>Телефон*<input id="c-phone" placeholder="+7 900 000-00-00"></label>
+          <label>Источник
+            <select id="c-source"><option>Звонок</option><option>Сайт</option><option>Визит</option><option>Рекомендация</option></select>
+          </label>
+          <label>Статус
+            <select id="c-status"><option>Новый</option><option>В работе</option><option>Сделка</option><option>Отказ</option><option>Постоянный</option></select>
+          </label>
+          <div class="actions"><button onclick="addClient()">Сохранить</button></div>
+        </div>
+        <div class="error" id="c-error">Заполните ФИО и телефон.</div>
+      </div>
+
+      <div class="panel">
+        <table>
+          <thead><tr><th>ФИО</th><th>Телефон</th><th>Источник</th><th>Статус</th><th></th></tr></thead>
+          <tbody id="clients-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="cars" class="page">
+      <div class="toolbar">
+        <input id="car-search" placeholder="🔎 Поиск по марке, модели, VIN..." oninput="renderCars()" style="min-width:240px">
+        <select id="car-filter" onchange="renderCars()">
+          <option value="">Все статусы</option>
+          <option>В наличии</option><option>Зарезервирован</option><option>Продан</option>
+        </select>
+        <button onclick="toggle('car-form')">+ Добавить автомобиль</button>
+      </div>
+
+      <div id="car-form" class="panel" style="display:none;margin-bottom:12px">
+        <div class="form-grid">
+          <label>VIN*<input id="car-vin" placeholder="17 символов" maxlength="17"></label>
+          <label>Марка / модель*<input id="car-model" placeholder="Lada Vesta"></label>
+          <label>Цвет<input id="car-color" placeholder="Белый"></label>
+          <label>Год выпуска<input id="car-year" type="number" min="1990" max="2026" value="2024"></label>
+          <label>Цена, ₽*<input id="car-price" type="number" min="0" step="1000" placeholder="1500000"></label>
+          <label>Поставщик<input id="car-supplier" placeholder="ООО «АвтоТрейд»"></label>
+          <label>Статус
+            <select id="car-status" onchange="onCarStatusChange()">
+              <option>В наличии</option><option>Зарезервирован</option><option>Продан</option>
+            </select>
+          </label>
+          <label id="car-res-wrap" style="display:none">Зарезервирован кем
+            <select id="car-res-client"></select>
+          </label>
+          <div class="actions"><button onclick="addCar()">Сохранить</button></div>
+        </div>
+        <div class="error" id="car-error">Заполните VIN, модель и цену. VIN должен содержать 17 символов.</div>
+      </div>
+
+      <div class="panel">
+        <table>
+          <thead><tr><th>VIN</th><th>Марка / модель</th><th>Цвет</th><th>Год</th><th>Цена, ₽</th><th>Статус</th><th>Резерв</th></tr></thead>
+          <tbody id="cars-body"></tbody>
+        </table>
+      </div>
+      <div class="hint">Зарезервированные и проданные авто недоступны для выбора в разделе «Сделки».</div>
+    </section>
+
+    <section id="deals" class="page">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-head"><h3>Оформление сделки</h3></div>
+        <div class="form-grid">
+          <label>Клиент*<select id="d-client"></select></label>
+          <label>Автомобиль*<select id="d-car" onchange="recalcDeal()"></select></label>
+          <label>Скидка, %<input id="d-discount" type="number" min="0" max="50" value="0" oninput="recalcDeal()"></label>
+          <label>Итоговая сумма, ₽<input id="d-total" readonly value="0"></label>
+          <div class="actions"><button onclick="addDeal()">Оформить сделку</button></div>
+        </div>
+        <div class="error" id="d-error">Выберите клиента и автомобиль.</div>
+        <div class="hint" id="d-hint">В списке автомобилей — только авто в статусе «В наличии».</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Список сделок</h3></div>
+        <table>
+          <thead><tr><th>№</th><th>Клиент</th><th>Автомобиль</th><th>Скидка</th><th>Сумма, ₽</th></tr></thead>
+          <tbody id="deals-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="reports" class="page">
+      <div class="panel">
+        <div class="panel-head"><h3>Продажи по моделям</h3></div>
+        <table>
+          <thead><tr><th>Модель</th><th>Количество сделок</th><th>Сумма, ₽</th></tr></thead>
+          <tbody id="reports-body"></tbody>
+        </table>
+      </div>
+      <div class="hint">Сводка формируется автоматически по оформленным сделкам (F-20).</div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ===== Данные (уже заполнены) ===== */
+let clients = [
+  { name:"Иванов Иван Иванович", phone:"+7 900 111-22-33", source:"Сайт", status:"Новый" },
+  { name:"Петрова Анна Сергеевна", phone:"+7 900 222-33-44", source:"Звонок", status:"В работе" },
+  { name:"Сидоров Пётр Алексеевич", phone:"+7 900 333-44-55", source:"Визит", status:"Сделка" },
+  { name:"Кузнецова Мария Игоревна", phone:"+7 900 444-55-66", source:"Рекомендация", status:"Постоянный" },
+  { name:"Смирнов Олег Викторович", phone:"+7 900 555-66-77", source:"Сайт", status:"Отказ" }
+];
+
+let cars = [
+  { vin:"XTA211500A1234567", model:"Lada Vesta", color:"Белый", year:2024, price:1750000, status:"В наличии", supplier:"ООО «АвтоТрейд»", reservedBy:"" },
+  { vin:"XTA211500B2345678", model:"Lada Granta", color:"Серый", year:2023, price:1050000, status:"В наличии", supplier:"ООО «АвтоТрейд»", reservedBy:"" },
+  { vin:"XW8ZZZ61ZMG123456", model:"Volkswagen Polo", color:"Синий", year:2024, price:1650000, status:"Зарезервирован", supplier:"ООО «Фольксваген Групп»", reservedBy:"Петрова Анна Сергеевна" },
+  { vin:"Z94K241B0LR123456", model:"Kia Rio", color:"Красный", year:2023, price:1550000, status:"Продан", supplier:"ООО «Киа Моторс»", reservedBy:"" },
+  { vin:"JTDBR32E3N0123456", model:"Toyota Corolla", color:"Чёрный", year:2024, price:2450000, status:"В наличии", supplier:"ООО «Тойота Центр»", reservedBy:"" }
+];
+
+let deals = [
+  { client:"Сидоров Пётр Алексеевич", car:"Kia Rio", discount:5, total:1472500 }
+];
+
+/* ===== Утилиты ===== */
+const $ = id => document.getElementById(id);
+const rub = n => n.toLocaleString("ru-RU");
+function toggle(id){ const el=$(id); el.style.display = (el.style.display==="none")?"block":"none"; }
+function toast(msg,type="ok"){
+  const t=document.createElement("div");
+  t.className="toast "+(type==="err"?"err":"ok");
+  t.textContent=msg;
+  $("toasts").appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+function statusClass(s){
+  return {"Новый":"b-new","В работе":"b-work","Сделка":"b-deal","Отказ":"b-no","Постоянный":"b-deal",
+    "В наличии":"b-in","Зарезервирован":"b-res","Продан":"b-sold"}[s]||"b-sold";
+}
+
+/* ===== Навигация ===== */
+const titles = {
+  dashboard:["Главная","Сводка по работе автосалона"],
+  clients:["Клиенты","Ведение клиентской базы и история обращений"],
+  cars:["Автомобили","Учёт автомобилей, поиск и фильтрация"],
+  deals:["Сделки","Оформление и список сделок"],
+  reports:["Отчёты","Аналитика продаж"]
+};
+document.querySelectorAll(".sidebar nav a").forEach(link=>{
+  link.addEventListener("click",()=>{
+    document.querySelectorAll(".sidebar nav a").forEach(l=>l.classList.remove("active"));
+    link.classList.add("active");
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById(link.dataset.page).classList.add("active");
+    const t = titles[link.dataset.page];
+    $("page-title").textContent = t[0];
+    $("page-sub").textContent = t[1];
+    if(link.dataset.page==="deals") renderDealSelects();
+  });
+});
+
+/* ===== Клиенты ===== */
+function renderClients(){
+  const q = ($("client-search").value||"").toLowerCase();
+  const body = $("clients-body");
+  body.innerHTML = "";
+  const list = clients.filter(c=>c.name.toLowerCase().includes(q)||c.phone.toLowerCase().includes(q));
+  if(!list.length){ body.innerHTML='<tr><td colspan="5" class="empty">Клиенты не найдены</td></tr>'; }
+  list.forEach(c=>{
+    const i = clients.indexOf(c);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${c.name}</b></td>
+      <td>${c.phone}</td>
+      <td>${c.source}</td>
+      <td><span class="badge ${statusClass(c.status)}">${c.status}</span></td>
+      <td style="text-align:right"><button class="small danger" onclick="removeClient(${i})">Удалить</button></td>`;
+    body.appendChild(tr);
+  });
+  $("kpi-clients").textContent = clients.length;
+}
+function addClient(){
+  const name = $("c-name").value.trim();
+  const phone = $("c-phone").value.trim();
+  if(!name || !phone){ $("c-error").style.display="block"; return; }
+  clients.push({name, phone, source:$("c-source").value, status:$("c-status").value});
+  $("c-name").value=""; $("c-phone").value="";
+  $("c-error").style.display="none";
+  toggle("client-form");
+  renderClients(); renderDashboard(); renderReserveClients();
+  toast("Клиент добавлен");
+}
+function removeClient(i){
+  const name = clients[i].name;
+  if(cars.some(c=>c.reservedBy===name)){
+    toast("Нельзя удалить: клиент резервирует автомобиль","err"); return;
+  }
+  clients.splice(i,1);
+  renderClients(); renderDashboard(); renderDealSelects(); renderReserveClients();
+  toast("Клиент удалён");
+}
+
+/* ===== Автомобили ===== */
+function onCarStatusChange(){
+  const s = $("car-status").value;
+  $("car-res-wrap").style.display = (s==="Зарезервирован") ? "flex" : "none";
+}
+function renderReserveClients(){
+  const sel = $("car-res-client");
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— выберите клиента —</option>';
+  clients.forEach(c=>{ sel.innerHTML += `<option>${c.name}</option>`; });
+  if(prev) sel.value = prev;
+}
+function renderCars(){
+  const q = ($("car-search").value||"").toLowerCase();
+  const f = $("car-filter").value;
+  const body = $("cars-body");
+  body.innerHTML = "";
+  const list = cars.filter(c =>
+    (c.model.toLowerCase().includes(q) || c.vin.toLowerCase().includes(q)) &&
+    (!f || c.status===f));
+  if(!list.length){ body.innerHTML='<tr><td colspan="7" class="empty">Автомобили не найдены</td></tr>'; }
+  list.forEach(c=>{
+    const tr = document.createElement("tr");
+    const reserve = (c.status==="Зарезервирован" && c.reservedBy)
+      ? `<span class="badge b-res">${c.reservedBy}</span>`
+      : '<span style="color:#94a3b8">—</span>';
+    tr.innerHTML = `
+      <td class="mono">${c.vin}</td>
+      <td><b>${c.model}</b><div style="font-size:11.5px;color:#64748b">${c.supplier||""}</div></td>
+      <td>${c.color}</td>
+      <td>${c.year}</td>
+      <td>${rub(c.price)}</td>
+      <td><span class="badge ${statusClass(c.status)}">${c.status}</span></td>
+      <td>${reserve}</td>`;
+    body.appendChild(tr);
+  });
+  $("kpi-cars").textContent = cars.filter(c=>c.status==="В наличии").length;
+}
+function addCar(){
+  const vin = $("car-vin").value.trim().toUpperCase();
+  const model = $("car-model").value.trim();
+  const color = $("car-color").value.trim() || "—";
+  const year = Number($("car-year").value) || 2024;
+  const price = Number($("car-price").value) || 0;
+  const supplier = $("car-supplier").value.trim() || "—";
+  const status = $("car-status").value;
+  const reservedBy = (status==="Зарезервирован") ? $("car-res-client").value : "";
+
+  const err = $("car-error");
+  if(!vin || vin.length!==17 || !model || price<=0){
+    err.textContent = "Заполните VIN (17 символов), модель и цену.";
+    err.style.display="block"; return;
+  }
+  if(cars.some(c=>c.vin===vin)){
+    err.textContent = "Автомобиль с таким VIN уже есть в базе.";
+    err.style.display="block"; return;
+  }
+  if(status==="Зарезервирован" && !reservedBy){
+    err.textContent = "Выберите клиента для резерва.";
+    err.style.display="block"; return;
+  }
+  err.style.display="none";
+  cars.push({vin,model,color,year,price,status,supplier,reservedBy});
+
+  ["car-vin","car-model","car-color","car-price","car-supplier"].forEach(id=>$(id).value="");
+  $("car-year").value = 2024;
+  $("car-status").value = "В наличии";
+  onCarStatusChange();
+  toggle("car-form");
+  renderCars(); renderDashboard(); renderDealSelects();
+  toast("Автомобиль добавлен");
+}
+
+/* ===== Сделки ===== */
+function renderDealSelects(){
+  const cs = $("d-client"), cr = $("d-car");
+  if(!cs || !cr) return;
+
+  cs.innerHTML = '<option value="">— выберите клиента —</option>';
+  clients.forEach(c=>cs.innerHTML += `<option>${c.name}</option>`);
+
+  const available = cars.filter(c=>c.status==="В наличии");
+  cr.innerHTML = '<option value="">— выберите автомобиль —</option>';
+  if(!available.length){
+    cr.innerHTML = '<option value="">Нет доступных автомобилей</option>';
+    $("d-hint").textContent = "Все автомобили проданы или зарезервированы.";
+  } else {
+    available.forEach(c=>cr.innerHTML += `<option>${c.model} — ${rub(c.price)} ₽ [${c.vin}]</option>`);
+    $("d-hint").textContent = "В списке автомобилей — только авто в статусе «В наличии».";
+  }
+  recalcDeal();
+}
+function findSelectedCar(){
+  const label = $("d-car").value;
+  if(!label) return null;
+  const m = label.match(/\[(.+)\]/);
+  if(!m) return null;
+  return cars.find(c=>c.vin===m[1]) || null;
+}
+function recalcDeal(){
+  const car = findSelectedCar();
+  const disc = Number($("d-discount").value) || 0;
+  const total = car ? Math.round(car.price*(1-disc/100)) : 0;
+  $("d-total").value = rub(total);
+}
+function addDeal(){
+  const client = $("d-client").value;
+  const car = findSelectedCar();
+  const disc = Number($("d-discount").value) || 0;
+  const err = $("d-error");
+
+  if(!client || !car){ err.style.display="block"; return; }
+  if(car.status!=="В наличии"){
+    err.textContent = "Этот автомобиль уже продан или зарезервирован.";
+    err.style.display="block"; return;
+  }
+  err.style.display="none";
+
+  const total = Math.round(car.price*(1-disc/100));
+  deals.push({client, car:car.model, discount:disc, total});
+  car.status = "Продан";
+  car.reservedBy = "";
+
+  renderDeals(); renderCars(); renderDashboard(); renderReports(); renderDealSelects();
+  $("d-client").value = "";
+  $("d-discount").value = 0;
+  toast("Сделка оформлена");
+}
+function renderDeals(){
+  const body = $("deals-body");
+  body.innerHTML = "";
+  if(!deals.length){ body.innerHTML='<tr><td colspan="5" class="empty">Сделок пока нет</td></tr>'; }
+  deals.forEach((d,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${i+1}</td><td>${d.client}</td><td>${d.car}</td><td>${d.discount}%</td><td><b>${rub(d.total)}</b></td>`;
+    body.appendChild(tr);
+  });
+  $("kpi-deals").textContent = deals.length;
+}
+
+/* ===== Дашборд и отчёты ===== */
+function renderDashboard(){
+  $("kpi-clients").textContent = clients.length;
+  $("kpi-cars").textContent = cars.filter(c=>c.status==="В наличии").length;
+  $("kpi-deals").textContent = deals.length;
+  $("kpi-sum").textContent = rub(deals.reduce((s,d)=>s+d.total,0));
+
+  const stages = ["Новый","В работе","Сделка","Постоянный"];
+  const max = Math.max(...stages.map(s=>clients.filter(c=>c.status===s).length), 1);
+  $("funnel").innerHTML = "";
+  stages.forEach(s=>{
+    const n = clients.filter(c=>c.status===s).length;
+    const w = Math.round(n/max*260) + 8;
+    $("funnel").innerHTML += `
+      <div class="funnel-row">
+        <span>${s}</span>
+        <div class="funnel-bar" style="width:${w}px"></div>
+        <b>${n}</b>
+      </div>`;
+  });
+}
+function renderReports(){
+  const body = $("reports-body");
+  body.innerHTML = "";
+  const map = {};
+  deals.forEach(d=>{
+    if(!map[d.car]) map[d.car] = {count:0, sum:0};
+    map[d.car].count++;
+    map[d.car].sum += d.total;
+  });
+  const keys = Object.keys(map);
+  if(!keys.length){ body.innerHTML='<tr><td colspan="3" class="empty">Нет данных</td></tr>'; return; }
+  keys.forEach(model=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><b>${model}</b></td><td>${map[model].count}</td><td>${rub(map[model].sum)}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* ===== Инициализация ===== */
+renderClients();
+renderCars();
+renderReserveClients();
+renderDeals();
+renderDashboard();
+renderReports();
+renderDealSelects();
+</script>
+</body>
+</html>
